@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<widget id="RemoteAction.widget.RemoteAction" needsEntityContext="true" xmlns="http://www.mendix.com/widget/1.0/">
+    <name>Remote Action</name>
+    <description>Trigger a client side action from the server</description>
+    <icon />
+    <properties>
+        <property key="key" type="string" defaultValue="">
+            <caption>Key</caption>
+            <category>General</category>
+            <description/>
+        </property>
+        <property key="cluster" type="string" defaultValue="">
+            <caption>Cluster</caption>
+            <category>General</category>
+            <description/>
+        </property>
+        <property key="actionName" type="string" defaultValue="">
+            <caption>Action name</caption>
+            <category>Action</category>
+            <description/>
+        </property>
+        <property key="action" type="enumeration" defaultValue="callMicroflow">
+            <caption>Action</caption>
+            <category>Action</category>
+            <description/>
+            <enumerationValues>
+                <enumerationValue key="showPage">Show a page</enumerationValue>
+                <enumerationValue key="callMicroflow">Call a microflow</enumerationValue>
+                <enumerationValue key="callNanoflow">Call a nanoflow</enumerationValue>
+            </enumerationValues>
+        </property>
+        <property key="page" type="form" required="false">
+            <caption>Page</caption>
+            <category>Action</category>
+            <description>The page that will be opened on click</description>
+        </property>
+        <property key="openPageAs" type="enumeration" defaultValue="content">
+            <caption>Open page as</caption>
+            <category>Action</category>
+            <description/>
+            <enumerationValues>
+                <enumerationValue key="content">Full page</enumerationValue>
+                <enumerationValue key="popup">Popup</enumerationValue>
+                <enumerationValue key="modal">Blocking popup</enumerationValue>
+            </enumerationValues>
+        </property>
+        <property key="microflow" type="microflow" required="false">
+            <caption>Microflow</caption>
+            <category>Action</category>
+            <description/>
+            <returnType type="Void"/>
+        </property>
+        <property key="nanoflow" type="nanoflow" required="false">
+            <caption>Nanoflow</caption>
+            <category>Action</category>
+            <description/>
+            <returnType type="Void"/>
+        </property>
+    </properties>
+</widget>
