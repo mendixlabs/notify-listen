@@ -11,16 +11,11 @@ interface MessageData {
     sender: string;
 }
 
-interface Nanoflow {
-    nanoflow: object[];
-    paramsSpec: { Progress: string };
-}
-
 interface Action {
     actionName: string;
     action: ActionOptions;
     microflow: string;
-    nanoflow: Nanoflow;
+    nanoflow: mx.Nanoflow;
 }
 
 type ActionOptions = "callNanoflow" | "callMicroflow";
@@ -118,7 +113,7 @@ class NotifyListen extends WidgetBase {
         }
     }
 
-    callNanoflow(nanoflow: Nanoflow) {
+    callNanoflow(nanoflow: mx.Nanoflow) {
         window.mx.data.callNanoflow({
             nanoflow,
             origin: this.mxform,
