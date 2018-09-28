@@ -4,10 +4,11 @@ import * as domConstruct from "dojo/dom-construct";
 
 import * as Pusher from "pusher-js";
 
-interface RefreshData {
-    changedDate: string;
+interface MessageData {
     guid: string;
     entity: string;
+    changedDate: number;
+    sender: string;
 }
 
 interface Nanoflow {
@@ -15,27 +16,27 @@ interface Nanoflow {
     paramsSpec: { Progress: string };
 }
 
-type ActionOptions = "showPage" | "callNanoflow" | "callMicroflow";
+interface Action {
+    actionName: string;
+    action: ActionOptions;
+    microflow: string;
+    nanoflow: Nanoflow;
+}
 
-type PageLocation = "content"| "popup" | "modal";
+type ActionOptions = "callNanoflow" | "callMicroflow";
 
-class RemoteAction extends WidgetBase {
+class NotifyListen extends WidgetBase {
     // Modeler settings - General
     cluster: string;
     key: string;
     // Modeler settings - Action
-    actionName: string;
-    action: ActionOptions;
-    page: string;
-    openPageAs: PageLocation;
-    microflow: string;
-    nanoflow: Nanoflow;
+    actionList: Action[];
 
     private pusher: Pusher.Pusher;
     private channelName: string;
 
     postCreate() {
-        logger.debug(this.friendlyId + ".postCreate");
+        window.logger.debug(this.friendlyId + ".postCreate");
         const message = this.validateSettings();
         if (!message) {
             this.pusher = new Pusher(this.key, {
@@ -43,10 +44,10 @@ class RemoteAction extends WidgetBase {
                 encrypted: true
             });
             this.pusher.connection.bind("error", error => {
-                logger.error(this.friendlyId, "Error Pusher js connection", error);
+                window.logger.error(this.friendlyId, "Error Pusher js connection", error);
             });
             this.pusher.connection.bind("state_change", states => {
-                logger.debug(this.friendlyId, "current state is " + states.current);
+                window.logger.debug(this.friendlyId, "current state is " + states.current);
             });
         } else {
             this.showError(message);
@@ -54,9 +55,10 @@ class RemoteAction extends WidgetBase {
     }
 
     update(contextObject: mendix.lib.MxObject, callback?: () => void) {
-        logger.debug(this.friendlyId + ".update");
-
-        this.subscribeChannel(contextObject);
+        window.logger.debug(this.friendlyId + ".update");
+        if (this.pusher) {
+            this.subscribeChannel(contextObject);
+        }
 
         if (callback) {
             callback();
@@ -64,7 +66,7 @@ class RemoteAction extends WidgetBase {
     }
 
     uninitialize(): boolean {
-        logger.debug(this.friendlyId + ".uninitialize");
+        window.logger.debug(this.friendlyId + ".uninitialize");
         if (this.pusher) {
             this.pusher.disconnect();
         }
@@ -72,14 +74,17 @@ class RemoteAction extends WidgetBase {
     }
 
     private validateSettings(): string | undefined {
-        if (this.action === "showPage" && !this.page) {
-            return "Action is set to Show a page, but no Page is select";
-        }
-        if (this.action === "callMicroflow" && !this.microflow) {
-            return "Action is set to Call a microflow but no Microflow is select";
-        }
-        if (this.action === "callNanoflow" && !this.nanoflow.nanoflow) {
-            return "Action is set to Call a nanoflow but no Nanoflow is select";
+        const errorList: string[] = [];
+        this.actionList.forEach(action => {
+            if (action.action === "callMicroflow" && !action.microflow) {
+                errorList.push(`Action ${action.actionName} is set to Call a microflow but no Microflow is selected`);
+            }
+            if (action.action === "callNanoflow" && !action.nanoflow.nanoflow) {
+                errorList.push(`Action ${action.actionName} is set to Call a nanoflow but no Nanoflow is selected`);
+            }
+        });
+        if (errorList.length > 0) {
+            return errorList.join("<br>\n");
         }
         return;
     }
@@ -94,16 +99,17 @@ class RemoteAction extends WidgetBase {
                 this.channelName = newChannelName;
                 window.logger.debug(this.friendlyId + ".subscribeChannel", this.channelName);
                 const channel = this.pusher.subscribe(this.channelName);
-                channel.bind(this.actionName, (data: RefreshData) => {
-                    if (this.action === "showPage") {
-                        this.showPage();
-                    } else if (this.action === "callMicroflow") {
-                        this.callMicroflow();
-                    } else if (this.action === "callNanoflow") {
-                        this.callNanoflow();
-                    } else {
-                        window.logger.error("Unknown action", this.action);
-                    }
+                this.actionList.forEach(action => {
+                    channel.bind(action.actionName, (data: MessageData) => {
+                        window.logger.debug(this.friendlyId + " received data ", data);
+                        if (action.action === "callMicroflow") {
+                            this.callMicroflow(action.microflow);
+                        } else if (action.action === "callNanoflow") {
+                            this.callNanoflow(action.nanoflow);
+                        } else {
+                            window.logger.warn("Unknown action", action.action);
+                        }
+                    });
                 });
             }
         } else if (this.channelName) {
@@ -112,44 +118,24 @@ class RemoteAction extends WidgetBase {
         }
     }
 
-    showPage() {
-        window.mx.ui.openForm(this.page, {
-            context: this.mxcontext,
-            location: this.openPageAs,
-            error: error =>
-                window.mx.ui.error(`An error occurred while opening form ${this.page} : ${error.message}`)
-        });
-    }
-
-    callNanoflow() {
+    callNanoflow(nanoflow: Nanoflow) {
         window.mx.data.callNanoflow({
-            nanoflow: this.nanoflow,
+            nanoflow,
             origin: this.mxform,
             context: this.mxcontext,
-            callback: () => {
-                window.logger.debug("callNanoflow done");
-            },
             error: error => {
-                window.mx.ui.error("Error calling nanoflow");
-                window.logger.error("Error calling nanoflow", error);
+                window.mx.ui.error(`An error occurred while executing the nanoflow: ${error.message}`);
+                window.logger.error(this.friendlyId + " An error occurred while executing a nanoflow:", error);
             }
         });
     }
 
-    callMicroflow() {
+    callMicroflow(actionname: string) {
         window.mx.data.action({
-            params: {
-                actionname: this.microflow
-            },
+            params: { actionname },
             origin: this.mxform,
             context: this.mxcontext,
-            callback: () => {
-                window.logger.debug("callMicroflow done");
-            },
-            error: error => {
-                window.mx.ui.error("Error calling microflow");
-                window.logger.error("error calling microflow", error);
-            }
+            error: error => window.mx.ui.error(`Error while executing microflow ${actionname}: ${error.message}`)
         });
     }
 
@@ -162,7 +148,7 @@ class RemoteAction extends WidgetBase {
 // Declare widget prototype the Dojo way
 // Thanks to https://github.com/DefinitelyTyped/DefinitelyTyped/blob/master/types/dojo/README.md
 // tslint:disable : only-arrow-functions
-dojoDeclare("RemoteAction.widget.RemoteAction", [ WidgetBase ], function(Source: any) {
+dojoDeclare("NotifyListen.widget.NotifyListen", [ WidgetBase ], function(Source: any) {
     const result: any = {};
     for (const property in Source.prototype) {
         if (property !== "constructor" && Source.prototype.hasOwnProperty(property)) {
@@ -170,4 +156,4 @@ dojoDeclare("RemoteAction.widget.RemoteAction", [ WidgetBase ], function(Source:
         }
     }
     return result;
-}(RemoteAction));
+}(NotifyListen));

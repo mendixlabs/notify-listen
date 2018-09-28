@@ -1,7 +1,6 @@
 const webpack = require("webpack");
 const path = require("path");
 const CopyWebpackPlugin = require("copy-webpack-plugin");
-const ExtractTextPlugin = require("extract-text-webpack-plugin");
 const nodePackage = require("./package");
 const widgetName = nodePackage.widgetName;
 
@@ -10,22 +9,14 @@ const widgetConfig = {
     output: {
         path: path.resolve(__dirname, "dist/tmp"),
         filename: `src/${widgetName}/widget/${widgetName}.js`,
-        libraryTarget:  "amd"
+        libraryTarget: "amd"
     },
     resolve: {
-        extensions: [ ".ts", ".js" ],
-        alias: {
-            "tests": path.resolve(__dirname, "./tests")
-        }
+        extensions: [ ".ts", ".js" ]
     },
     module: {
         rules: [
-            { test: /\.ts$/, use: "ts-loader" },
-            { test: /\.scss$/, loader: ExtractTextPlugin.extract({
-                fallback: "style-loader",
-                use: "css-loader!sass-loader"
-            }) },
-            // { test: /\.scss$/, use: [ "css-loader", "sass-loader" ] }
+            { test: /\.ts$/, use: "ts-loader" }
         ]
     },
     mode: "development",
@@ -33,10 +24,8 @@ const widgetConfig = {
     externals: [ /^mxui\/|^mendix\/|^dojo\/|^dijit\// ],
     plugins: [
         new CopyWebpackPlugin([
-            { from: "src/**/*.js" },
             { from: "src/**/*.xml" }
         ], { copyUnmodified: true }),
-        new ExtractTextPlugin({ filename: `./src/${widgetName}/widget/ui/${widgetName}.css` }),
         new webpack.LoaderOptionsPlugin({ debug: true })
     ]
 };
