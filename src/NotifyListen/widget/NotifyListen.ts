@@ -36,7 +36,13 @@ class NotifyListen extends WidgetBase {
         if (!message) {
             this.pusher = new Pusher(this.key, {
                 cluster: this.cluster,
-                encrypted: true
+                encrypted: true,
+                authEndpoint: "/rest/notifylisten/auth",
+                auth: {
+                    headers: {
+                        "X-Csrf-Token": mx.session.getConfig("csrftoken")
+                    }
+                }
             });
             this.pusher.connection.bind("error", error => {
                 window.logger.error(this.friendlyId, "Error Pusher js connection", error);
@@ -86,7 +92,7 @@ class NotifyListen extends WidgetBase {
 
     private subscribeChannel(object: mendix.lib.MxObject) {
         if (object) {
-            const newChannelName = object.getEntity() + "." + object.getGuid();
+            const newChannelName = "private-" + object.getEntity() + "." + object.getGuid();
             if (newChannelName !== this.channelName) {
                 if (this.channelName) {
                     this.pusher.unsubscribe(this.channelName);
@@ -105,6 +111,9 @@ class NotifyListen extends WidgetBase {
                             window.logger.warn("Unknown action", action.action);
                         }
                     });
+                    channel.bind("pusher:subscription_error", error => {
+                        window.logger.error(this.friendlyId, "subscription_error", error);
+                    });
                 });
             }
         } else if (this.channelName) {
@@ -113,7 +122,7 @@ class NotifyListen extends WidgetBase {
         }
     }
 
-    callNanoflow(nanoflow: mx.Nanoflow) {
+    private callNanoflow(nanoflow: mx.Nanoflow) {
         window.mx.data.callNanoflow({
             nanoflow,
             origin: this.mxform,
@@ -125,7 +134,7 @@ class NotifyListen extends WidgetBase {
         });
     }
 
-    callMicroflow(actionname: string) {
+    private callMicroflow(actionname: string) {
         window.mx.data.action({
             params: { actionname },
             origin: this.mxform,

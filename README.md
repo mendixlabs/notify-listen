@@ -1,4 +1,5 @@
 # Notify - Listen
+
 Listen to Notify server action and perform client side action.
 
 Trigger a microflow or nanoflow directly from the server on the client app, triggered from other session, whiteout waiting for the users interact with the page.
@@ -47,6 +48,7 @@ At the moment, 28 September 2018
 ## Usage
 
 1. Import the module from the app store
+1. Add the module role `NotifyListen User` to the user role
 1. Update the constants in the Configuration folder with the keys of the app
 1. Create a microflow to execute the `Notify` action. With input parameters
     1. Key settings
@@ -58,12 +60,21 @@ At the moment, 28 September 2018
     1. The `Action name` should match the action name parameter provided in the `Notify` action.
     1. Select a microflow or nanoflow the execute the action
 
-## Sequence diagram
+## Demo sequence diagram
+
 ![Update object via Notify - Listen](/assets/SequenceDiagramUpdateObject.png)
 
 ## Refresh microflow
+
 A microflow can be used to retrieve data that is changed by other users as long is it committed and the transaction has finished.
 
 The `$Message` variable is containing the object in session state, and the with the XPath query `[id = $Message]` the object is retried from the database. The changes action does only do a `Refresh in client`. This will trigger an refresh update on the client page.
 
 ![Update object via Notify - Listen](/assets/RefreshMicroflowSample.png)
+
+## Security
+
+The notify messages are send and anybody who listing.
+A message will contain limited data: entity name, id, changed date, notifier username. To send a 'Notify' message it is requires to have the private key which is stored on the server in the `NotifyListen.secret` constant. This 'secret' should not shared with anybody. The 'Listen' widget will user the public `NotifyListen.key` to receive a signal and will perform the action as the logged in user.
+
+An addition authentication request is made to the Mendix rest server `<host>/rest/notifylisten/auth`. Only when success full the user is allowed to lists. The service will only allow logged in user with the module right `NotifyListen.User` to listen, if the user have entity access to the object of the data where the widget is placed in.
