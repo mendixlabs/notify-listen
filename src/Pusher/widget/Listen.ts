@@ -18,12 +18,14 @@ interface Action {
     nanoflow: mx.Nanoflow;
 }
 
+interface KeyData {
+    key: string;
+    cluster: string;
+}
+
 type ActionOptions = "callNanoflow" | "callMicroflow";
 
 class NotifyListen extends WidgetBase {
-    // Modeler settings - General
-    cluster: string;
-    key: string;
     // Modeler settings - Action
     actionList: Action[];
 
@@ -34,21 +36,29 @@ class NotifyListen extends WidgetBase {
         window.logger.debug(this.friendlyId + ".postCreate");
         const message = this.validateSettings();
         if (!message) {
-            this.pusher = new Pusher(this.key, {
-                cluster: this.cluster,
-                encrypted: true,
-                authEndpoint: "/rest/notifylisten/auth",
-                auth: {
-                    headers: {
-                        "X-Csrf-Token": mx.session.getConfig("csrftoken")
+            this.getKey().then(keyData => {
+                const baseUrl = window.dojoConfig.remotebase ? window.dojoConfig.remotebase : mx.appUrl;
+                this.pusher = new Pusher(keyData.key, {
+                    cluster: keyData.cluster,
+                    encrypted: true,
+                    authEndpoint: baseUrl + "rest/pusher/auth",
+                    auth: {
+                        headers: {
+                            "X-Csrf-Token": mx.session.getConfig("csrftoken")
+                        }
                     }
+                });
+                this.pusher.connection.bind("error", error => {
+                    window.logger.error(this.friendlyId, "Error Pusher js connection", error);
+                });
+                this.pusher.connection.bind("state_change", states => {
+                    window.logger.debug(this.friendlyId, "current state is " + states.current);
+                });
+            }).then(() => {
+                const contextObject = this.mxcontext.getTrackObject();
+                if (contextObject) {
+                    this.subscribeChannel(contextObject);
                 }
-            });
-            this.pusher.connection.bind("error", error => {
-                window.logger.error(this.friendlyId, "Error Pusher js connection", error);
-            });
-            this.pusher.connection.bind("state_change", states => {
-                window.logger.debug(this.friendlyId, "current state is " + states.current);
             });
         } else {
             this.showError(message);
@@ -88,6 +98,37 @@ class NotifyListen extends WidgetBase {
             return errorList.join("<br>\n");
         }
         return;
+    }
+
+    private getKey(): Promise<KeyData> {
+        const baseUrl = window.dojoConfig.remotebase ? window.dojoConfig.remotebase : mx.appUrl;
+        console.log("Request auth " + baseUrl + "rest/pusher/key", (window as any).dojoConfig);
+        const request = new Request(baseUrl + "rest/pusher/key", {
+            method: "get",
+            credentials: "same-origin",
+            headers: {
+                "X-Csrf-Token": mx.session.getConfig("csrftoken")
+            }
+        });
+        return fetch(request)
+            .then(response => {
+                const { status } = response;
+                if (status === 200) {
+                return response.text();
+                } else {
+                logger.warn("Couldn't get key data from your web app", status);
+                throw status;
+                }
+            })
+            .then(data => {
+                try {
+                    return JSON.parse(data);
+                } catch (error) {
+                    const message = "JSON returned from web app key request is invalid, yet status code was 200. Data was: " + data;
+                    logger.warn(message);
+                    throw message;
+                }
+            });
     }
 
     private subscribeChannel(object: mendix.lib.MxObject) {
@@ -152,7 +193,7 @@ class NotifyListen extends WidgetBase {
 // Declare widget prototype the Dojo way
 // Thanks to https://github.com/DefinitelyTyped/DefinitelyTyped/blob/master/types/dojo/README.md
 // tslint:disable : only-arrow-functions
-dojoDeclare("NotifyListen.widget.NotifyListen", [ WidgetBase ], function(Source: any) {
+dojoDeclare("Pusher.widget.Listen", [ WidgetBase ], function(Source: any) {
     const result: any = {};
     for (const property in Source.prototype) {
         if (property !== "constructor" && Source.prototype.hasOwnProperty(property)) {
