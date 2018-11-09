@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<widget id="Pusher.widget.Listen" needsEntityContext="true" offlineCapable="true" xmlns="http://www.mendix.com/widget/1.0/">
+    <name>Listen</name>
+    <description>Listen to Notify server action and perform client side action</description>
+    <icon>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</icon>
+    <properties>
+        <property key="actionList" type="object" isList="true">
+            <caption>List</caption>
+            <category>Action</category>
+            <description/>
+            <properties>
+                <property key="actionName" type="string" defaultValue="">
+                    <caption>Action name</caption>
+                    <category>Action</category>
+                    <description>The name should match the with the 'Notify' action parameter `ActionName`</description>
+                </property>
+                <property key="action" type="enumeration" defaultValue="callMicroflow">
+                    <caption>Action</caption>
+                    <category>Action</category>
+                    <description/>
+                    <enumerationValues>
+                        <enumerationValue key="callMicroflow">Call a microflow</enumerationValue>
+                        <enumerationValue key="callNanoflow">Call a nanoflow</enumerationValue>
+                    </enumerationValues>
+                </property>
+                <property key="microflow" type="microflow" required="false">
+                    <caption>Microflow</caption>
+                    <category>Action</category>
+                    <description/>
+                    <returnType type="Void"/>
+                </property>
+                <property key="nanoflow" type="nanoflow" required="false">
+                    <caption>Nanoflow</caption>
+                    <category>Action</category>
+                    <description/>
+                    <returnType type="Void"/>
+                </property>
+            </properties>
+        </property>
+    </properties>
+</widget>

@@ -1,0 +1,31 @@
+// https://sequencediagram.org/
+title Update object via Notify - Listen
+
+participant Alice
+participant Shared object
+participant Bob
+participant External service
+
+activate Shared object #0595DB
+Alice->Shared object: Retrieve
+Shared object-->Alice: Session copy
+activate Alice #0595DB
+Bob->Shared object: Retrieve
+Shared object-->Bob: Session copy
+activate Bob #0595DB
+Bob->External service: Listen to action
+
+Alice->Alice: Change session object
+deactivate Alice
+activate Alice #76CA02
+Alice->Shared object: Commit
+deactivate Shared object
+activate Shared object #76CA02
+
+Alice->External service: Notify action
+External service->Bob: Call Listen widget
+
+Bob->Shared object: Retrieve
+Shared object-->Bob: Session copy; latest
+deactivate Bob
+activate Bob #76CA02
