@@ -38,6 +38,14 @@ class NotifyListen extends WidgetBase {
         if (!message) {
             this.getKey().then(keyData => {
                 const baseUrl = window.dojoConfig.remotebase ? window.dojoConfig.remotebase : mx.appUrl;
+                if (!keyData.key || !keyData.cluster) {
+                    this.showError("Authentication key and cluster are required. Please make sure Pusher.Pusher_Key and Pusher.Pusher_Cluster constants are set.");
+                    return;
+                }
+                if ([ "eu", "mt1", "us2", "ap1", "ap2" ]. indexOf(keyData.cluster) === -1) {
+                    this.showError(`Authentication cluster "${keyData.cluster}" is not supported. Please make sure  Pusher.Pusher_Cluster constants are set to "eu", "mt1", "us2", "ap1" or "ap2"`);
+                    return;
+                }
                 this.pusher = new Pusher(keyData.key, {
                     cluster: keyData.cluster,
                     encrypted: true,
@@ -55,6 +63,7 @@ class NotifyListen extends WidgetBase {
                     window.logger.debug(this.friendlyId, "current state is " + states.current);
                 });
             }).then(() => {
+                window.logger.debug(this.friendlyId + ".postCreate after pusher");
                 const contextObject = this.mxcontext.getTrackObject();
                 if (contextObject) {
                     this.subscribeChannel(contextObject);
@@ -102,7 +111,7 @@ class NotifyListen extends WidgetBase {
 
     private getKey(): Promise<KeyData> {
         const baseUrl = window.dojoConfig.remotebase ? window.dojoConfig.remotebase : mx.appUrl;
-        console.log("Request auth " + baseUrl + "rest/pusher/key", (window as any).dojoConfig);
+        console.log("Request auth " + baseUrl + "rest/pusher/key");
         const request = new Request(baseUrl + "rest/pusher/key", {
             method: "get",
             credentials: "same-origin",
@@ -114,10 +123,10 @@ class NotifyListen extends WidgetBase {
             .then(response => {
                 const { status } = response;
                 if (status === 200) {
-                return response.text();
+                    return response.text();
                 } else {
-                logger.warn("Couldn't get key data from your web app", status);
-                throw status;
+                    logger.warn("Couldn't get key data from your web app", status);
+                    throw status;
                 }
             })
             .then(data => {
@@ -132,6 +141,7 @@ class NotifyListen extends WidgetBase {
     }
 
     private subscribeChannel(object: mendix.lib.MxObject) {
+        window.logger.debug(this.friendlyId + ".subscribeChannel");
         if (object) {
             const newChannelName = "private-" + object.getEntity() + "." + object.getGuid();
             if (newChannelName !== this.channelName) {
@@ -153,6 +163,10 @@ class NotifyListen extends WidgetBase {
                         }
                     });
                     channel.bind("pusher:subscription_error", error => {
+                        if (error === 515) {
+                            this.showError("Authentication key, secret, app ID and cluster are required. Please make sure Pusher.Pusher_Key, Pusher.Pusher_Cluster, Pusher.Pusher_App_ID and Pusher.Pusher_Secret constants are set.");
+                            return;
+                        }
                         window.logger.error(this.friendlyId, "subscription_error", error);
                     });
                 });
@@ -185,7 +199,7 @@ class NotifyListen extends WidgetBase {
     }
 
     private showError(message: string) {
-        domConstruct.place(`<div class='alert alert-danger'>${message}</div>`, this.domNode, "first");
+        domConstruct.place(`<div class='alert alert-danger'>Pusher Listen: ${message}</div>`, this.domNode, "first");
         window.logger.error(this.friendlyId, message);
     }
 }

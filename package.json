@@ -2,7 +2,7 @@
   "name": "pusher",
   "packageName": "Pusher",
   "widgetName": "Listen",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Listen to Notify server action and perform client side action",
   "scripts": {
     "start": "nodemon --watch webpack.config.js --watch Gruntfile.js --exec \"grunt",
