@@ -2,7 +2,7 @@
   "name": "pusher",
   "packageName": "Pusher",
   "widgetName": "Listen",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Listen to Notify server action and perform client side action",
   "scripts": {
     "start": "grunt",
