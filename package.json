@@ -23,7 +23,7 @@
   },
   "dependencies": {
     "@types/react": "^16.8.23",
-    "@types/react-dom": "^16.8.5",
+    "@types/react-dom": "^16.9.13",
     "pusher-js": "^5.0.0"
   },
   "devDependencies": {
